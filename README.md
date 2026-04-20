@@ -98,9 +98,15 @@ docker run -p 8000:8000 piranha-api
 
 ## Adding records
 
-Drop new `AVE-YYYY-NNNNN.json` files into `records/` — the canonical source is
-[bawbel/bawbel-ave](https://github.com/bawbel/bawbel-ave).
-The API picks them up automatically in dev mode (no restart needed).
+The canonical source is [bawbel/bawbel-ave](https://github.com/bawbel/bawbel-ave).
+Records sync automatically from that repo on every deploy via `sync_records.py`.
+
+To sync manually:
+```bash
+python sync_records.py
+```
+
+To add a new record: open a PR to `bawbel/bawbel-ave` — it will appear in the API on the next deploy.
 
 ## Environment variables
 
