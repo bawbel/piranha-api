@@ -1,7 +1,7 @@
 """
-PiranhaDB — AVE Record API
+PiranhaDB — AVE Record API  v1.0.0
 
-The behavioral threat intelligence database for agentic AI vulnerabilities.
+Behavioral threat intelligence database for agentic AI vulnerabilities.
 Serves AVE records from the bawbel-ave standard.
 
 Endpoints:
@@ -12,13 +12,6 @@ Endpoints:
   GET /search?q=<query>          → search across title, description, attack_class
   GET /stats                     → registry statistics
   GET /health                    → health check
-
-Usage:
-  uvicorn main:app --host 0.0.0.0 --port 8000
-
-Docker:
-  docker build -t piranha-api .
-  docker run -p 8000:8000 piranha-api
 """
 
 import json
@@ -29,14 +22,13 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title       = "PiranhaDB — AVE Record API",
-    description = "The behavioral threat intelligence database for agentic AI vulnerabilities.",
-    version     = "0.1.0",
+    description = "Behavioral threat intelligence database for agentic AI vulnerabilities.",
+    version     = "1.0.0",
     docs_url    = "/docs",
     redoc_url   = "/redoc",
 )
@@ -44,7 +36,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins  = ["*"],
-    allow_methods  = ["GET"],
+    allow_methods  = ["GET", "POST"],
     allow_headers  = ["*"],
 )
 
@@ -52,8 +44,9 @@ app.add_middleware(
 
 RECORDS_DIR = Path(os.environ.get("PIRANHA_RECORDS_DIR", "./records"))
 
+
 def _load_records() -> dict[str, dict]:
-    """Load all AVE records from the records directory."""
+    """Load all AVE-*.json files from RECORDS_DIR into memory."""
     records = {}
     if not RECORDS_DIR.exists():
         return records
@@ -67,19 +60,76 @@ def _load_records() -> dict[str, dict]:
             pass
     return records
 
+
+# Load once at startup — start.sh runs sync_records.py first,
+# so this always picks up the latest records from bawbel-ave.
+_CACHE: dict[str, dict] = _load_records()
+
+
 def _get_records() -> dict[str, dict]:
-    """Return records — reload on each request in dev, cache in prod."""
-    if os.environ.get("PIRANHA_ENV") == "production":
-        return _CACHE
-    return _load_records()
-
-_CACHE = _load_records()
+    return _CACHE
 
 
-# ── Summary builder ───────────────────────────────────────────────────────────
+# ── Scanner rule mapping (all 40 AVE IDs) ────────────────────────────────────
+
+_SCANNER_RULES: dict[str, str] = {
+    "AVE-2026-00001": "bawbel-external-fetch",
+    "AVE-2026-00002": "bawbel-mcp-tool-poisoning",
+    "AVE-2026-00003": "bawbel-env-exfiltration",
+    "AVE-2026-00004": "bawbel-shell-pipe",
+    "AVE-2026-00005": "bawbel-destructive-command",
+    "AVE-2026-00006": "bawbel-crypto-drain",
+    "AVE-2026-00007": "bawbel-goal-override",
+    "AVE-2026-00008": "bawbel-persistence-attempt",
+    "AVE-2026-00009": "bawbel-jailbreak-instruction",
+    "AVE-2026-00010": "bawbel-hidden-instruction",
+    "AVE-2026-00011": "bawbel-dynamic-tool-call",
+    "AVE-2026-00012": "bawbel-permission-escalation",
+    "AVE-2026-00013": "bawbel-pii-exfiltration",
+    "AVE-2026-00014": "bawbel-trust-escalation",
+    "AVE-2026-00015": "bawbel-system-prompt-leak",
+    "AVE-2026-00016": "bawbel-rag-injection",
+    "AVE-2026-00017": "bawbel-mcp-impersonation",
+    "AVE-2026-00018": "bawbel-tool-result-manipulation",
+    "AVE-2026-00019": "bawbel-memory-poisoning",
+    "AVE-2026-00020": "bawbel-a2a-injection",
+    "AVE-2026-00021": "bawbel-autonomous-action",
+    "AVE-2026-00022": "bawbel-scope-creep",
+    "AVE-2026-00023": "bawbel-context-manipulation",
+    "AVE-2026-00024": "bawbel-content-type-mismatch",  # Magika engine
+    "AVE-2026-00025": "bawbel-history-injection",
+    "AVE-2026-00026": "bawbel-tool-output-exfil",
+    "AVE-2026-00027": "bawbel-multiturn-attack",
+    "AVE-2026-00028": "bawbel-file-prompt-injection",
+    "AVE-2026-00029": "bawbel-homoglyph-attack",       # YARA engine
+    "AVE-2026-00030": "bawbel-role-claim-escalation",
+    "AVE-2026-00031": "bawbel-feedback-poisoning",
+    "AVE-2026-00032": "bawbel-network-recon",
+    "AVE-2026-00033": "bawbel-unsafe-deserialization",
+    "AVE-2026-00034": "bawbel-supply-chain-skill",
+    "AVE-2026-00035": "bawbel-env-manipulation",       # YARA engine
+    "AVE-2026-00036": "bawbel-lateral-movement",
+    "AVE-2026-00037": "bawbel-vision-prompt-injection",
+    "AVE-2026-00038": "bawbel-excessive-agency",
+    "AVE-2026-00039": "bawbel-covert-channel",
+    "AVE-2026-00040": "bawbel-unsafe-output",
+}
+
+
+def _scanner_rule(r: dict) -> Optional[str]:
+    return _SCANNER_RULES.get(r.get("ave_id", ""))
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _severity_from_cvss(score: float) -> str:
+    if score >= 9.0: return "CRITICAL"
+    if score >= 7.0: return "HIGH"
+    if score >= 4.0: return "MEDIUM"
+    return "LOW"
+
 
 def _to_summary(r: dict) -> dict:
-    """Strip large fields for list responses."""
     return {
         "ave_id":              r.get("ave_id"),
         "title":               r.get("title"),
@@ -94,26 +144,6 @@ def _to_summary(r: dict) -> dict:
         "bawbel_scanner_rule": _scanner_rule(r),
     }
 
-def _severity_from_cvss(score: float) -> str:
-    if score >= 9.0: return "CRITICAL"
-    if score >= 7.0: return "HIGH"
-    if score >= 4.0: return "MEDIUM"
-    return "LOW"
-
-def _scanner_rule(r: dict) -> Optional[str]:
-    """Return the bawbel-scanner rule_id that detects this AVE."""
-    mapping = {
-        "AVE-2026-00001": "bawbel-external-fetch",
-        "AVE-2026-00002": "bawbel-mcp-tool-poisoning",
-        "AVE-2026-00003": "bawbel-env-exfiltration",
-        "AVE-2026-00004": "bawbel-shell-pipe",
-        "AVE-2026-00005": "bawbel-destructive-command",
-        "AVE-2026-00006": "bawbel-crypto-drain",
-        "AVE-2026-00007": "bawbel-goal-override",
-        "AVE-2026-00008": "bawbel-persistence-attempt",
-    }
-    return mapping.get(r.get("ave_id", ""))
-
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -123,7 +153,7 @@ def root():
     return {
         "name":        "PiranhaDB",
         "description": "Behavioral threat intelligence database for agentic AI vulnerabilities",
-        "version":     "0.1.0",
+        "version":     "1.0.0",
         "records":     len(records),
         "standard":    "AVE v0.1.0",
         "scanner":     "pip install bawbel-scanner",
@@ -147,18 +177,18 @@ def root():
 def health():
     records = _get_records()
     return {
-        "status":     "ok",
-        "records":    len(records),
-        "timestamp":  datetime.now(timezone.utc).isoformat(),
+        "status":    "ok",
+        "records":   len(records),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
 @app.get("/ave")
 def list_records(
-    severity:       Optional[str] = Query(None, description="Filter by severity: CRITICAL, HIGH, MEDIUM, LOW"),
+    severity:       Optional[str] = Query(None, description="CRITICAL, HIGH, MEDIUM, LOW"),
     attack_class:   Optional[str] = Query(None, description="Filter by attack class substring"),
-    component_type: Optional[str] = Query(None, description="Filter by component type: skill, mcp, prompt, plugin"),
-    status:         Optional[str] = Query(None, description="Filter by status: active, deprecated"),
+    component_type: Optional[str] = Query(None, description="skill, mcp, prompt, plugin"),
+    status:         Optional[str] = Query(None, description="active, deprecated"),
     limit:          int           = Query(50, ge=1, le=200),
     offset:         int           = Query(0, ge=0),
 ):
@@ -166,7 +196,6 @@ def list_records(
     records = _get_records()
     items   = [_to_summary(r) for r in records.values()]
 
-    # Filter
     if severity:
         items = [i for i in items if i["severity"] == severity.upper()]
     if attack_class:
@@ -177,32 +206,24 @@ def list_records(
         items = [i for i in items if i["status"] == status.lower()]
 
     total = len(items)
-    items = items[offset : offset + limit]
-
-    return {
-        "total":   total,
-        "offset":  offset,
-        "limit":   limit,
-        "records": items,
-    }
+    return {"total": total, "offset": offset, "limit": limit,
+            "records": items[offset: offset + limit]}
 
 
 @app.get("/ave/{ave_id}")
 def get_record(ave_id: str):
     """Get a single AVE record by ID."""
     records = _get_records()
-    # Case-insensitive lookup
-    record = records.get(ave_id) or records.get(ave_id.upper())
+    record  = records.get(ave_id) or records.get(ave_id.upper())
     if not record:
         raise HTTPException(
-            status_code = 404,
-            detail      = {
+            status_code=404,
+            detail={
                 "error":   f"AVE record not found: {ave_id}",
                 "hint":    "Browse all records at /ave",
                 "scanner": "pip install bawbel-scanner",
             },
         )
-    # Enrich with scanner rule
     record = dict(record)
     record["bawbel_scanner_rule"] = _scanner_rule(record)
     return record
@@ -215,15 +236,15 @@ def get_detection(ave_id: str):
     record  = records.get(ave_id) or records.get(ave_id.upper())
     if not record:
         raise HTTPException(status_code=404, detail=f"AVE record not found: {ave_id}")
-
+    rule = _scanner_rule(record)
     return {
-        "ave_id":                 record.get("ave_id"),
-        "title":                  record.get("title"),
-        "behavioral_fingerprint": record.get("behavioral_fingerprint"),
-        "detection_methodology":  record.get("detection_methodology"),
+        "ave_id":                   record.get("ave_id"),
+        "title":                    record.get("title"),
+        "behavioral_fingerprint":   record.get("behavioral_fingerprint"),
+        "detection_methodology":    record.get("detection_methodology"),
         "indicators_of_compromise": record.get("indicators_of_compromise", []),
-        "bawbel_scanner_rule":    _scanner_rule(record),
-        "scan_command":           f"bawbel scan ./skill.md  # detects {_scanner_rule(record) or 'this pattern'}",
+        "bawbel_scanner_rule":      rule,
+        "scan_command":             f"bawbel scan ./skill.md  # detects {rule or 'this pattern'}",
     }
 
 
@@ -232,43 +253,39 @@ def search(
     q:     str = Query(..., min_length=2, description="Search query"),
     limit: int = Query(20, ge=1, le=100),
 ):
-    """Search AVE records across title, description, and attack class."""
+    """Search AVE records by title, description, attack class, and behavioral fingerprint."""
     records = _get_records()
     query   = q.lower()
     results = []
 
     for r in records.values():
         score = 0
-        if query in (r.get("ave_id") or "").lower():           score += 10
-        if query in (r.get("title") or "").lower():            score += 5
-        if query in (r.get("attack_class") or "").lower():     score += 4
-        if query in (r.get("description") or "").lower():      score += 2
+        if query in (r.get("ave_id") or "").lower():                score += 10
+        if query in (r.get("title") or "").lower():                  score += 5
+        if query in (r.get("attack_class") or "").lower():           score += 4
+        if query in (r.get("description") or "").lower():            score += 2
         if query in (r.get("behavioral_fingerprint") or "").lower(): score += 1
+        if any(query in (m or "").lower() for m in r.get("owasp_mapping", [])): score += 3
         if score > 0:
-            summary        = _to_summary(r)
-            summary["_score"] = score
-            results.append(summary)
+            s           = _to_summary(r)
+            s["_score"] = score
+            results.append(s)
 
     results.sort(key=lambda x: x["_score"], reverse=True)
     for r in results:
         del r["_score"]
 
-    return {
-        "query":   q,
-        "total":   len(results),
-        "records": results[:limit],
-    }
+    return {"query": q, "total": len(results), "records": results[:limit]}
 
 
 @app.get("/stats")
 def stats():
     """Registry statistics."""
-    records = _get_records()
-    items   = list(records.values())
-
-    by_severity = {}
-    by_type     = {}
-    by_class    = {}
+    records         = _get_records()
+    items           = list(records.values())
+    by_severity     = {}
+    by_type         = {}
+    by_class        = {}
     total_mutations = 0
 
     for r in items:
@@ -291,4 +308,21 @@ def stats():
         "by_attack_class":   by_class,
         "schema_version":    "0.1.0",
         "last_updated":      datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ── Admin: hot-reload records without restart ─────────────────────────────────
+
+@app.post("/reload", include_in_schema=False)
+def reload_records():
+    """
+    Reload the in-memory cache from disk after a manual sync:
+        python sync_records.py && curl -X POST http://localhost:8000/reload
+    """
+    global _CACHE
+    _CACHE = _load_records()
+    return {
+        "status":    "reloaded",
+        "records":   len(_CACHE),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
