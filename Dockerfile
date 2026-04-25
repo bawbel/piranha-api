@@ -2,26 +2,42 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends git \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN pip install --no-cache-dir fastapi "uvicorn[standard]"
 
-COPY main.py sync_records.py ./
+# Application code
+COPY main.py         .
+COPY sync_records.py .
+COPY start.sh        .
+RUN chmod +x start.sh
 
-# Sync AVE records from bawbel-ave at build time
-RUN python sync_records.py || echo "Sync failed — starting with empty records dir"
+# Bundle records as offline fallback only —
+# start.sh will overwrite them with the latest from bawbel-ave on every start.
+# To skip the git clone at build time set: --build-arg SKIP_CLONE=1
+ARG SKIP_CLONE=
+RUN if [ -z "$SKIP_CLONE" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends git \
+      && rm -rf /var/lib/apt/lists/* \
+      && git clone --depth=1 --filter=blob:none --sparse \
+           https://github.com/bawbel/bawbel-ave.git /tmp/bawbel-ave \
+      && cd /tmp/bawbel-ave && git sparse-checkout set records \
+      && mkdir -p /app/records \
+      && cp /tmp/bawbel-ave/records/AVE-*.json /app/records/ \
+      && rm -rf /tmp/bawbel-ave \
+      && echo "Bundled $(ls /app/records/AVE-*.json | wc -l) records as fallback"; \
+    fi
 
-ENV PIRANHA_ENV=production
-ENV PIRANHA_RECORDS_DIR=/app/records
-
+# Non-root user
 RUN useradd --create-home --uid 1000 piranha \
-    && chown -R piranha:piranha /app
+ && mkdir -p /app/records \
+ && chown -R piranha /app
 USER piranha
+
+ENV PIRANHA_RECORDS_DIR=/app/records
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# start.sh: syncs latest records from bawbel-ave then starts uvicorn
+CMD ["./start.sh"]
