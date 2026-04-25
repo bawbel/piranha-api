@@ -5,7 +5,7 @@ Serves the [AVE standard](https://github.com/bawbel/bawbel-ave) records via REST
 
 **Live at:** `https://api.piranha.bawbel.io`
 
-[![Records](https://img.shields.io/badge/AVE_Records-8-blue.svg)](https://github.com/bawbel/bawbel-ave/tree/main/records)
+[![Records](https://img.shields.io/badge/AVE_Records-40-blue.svg)](https://github.com/bawbel/bawbel-ave/tree/main/records)
 [![Status](https://img.shields.io/badge/Status-Live-brightgreen.svg)](https://api.piranha.bawbel.io/health)
 [![License](https://img.shields.io/badge/License-Apache_2.0-teal.svg)](LICENSE)
 
