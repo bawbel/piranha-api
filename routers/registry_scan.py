@@ -7,7 +7,7 @@ GET /registry-scan/sources         : available scan sources
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from store.scan_store import get_latest, get_history
 
 router = APIRouter(prefix="/registry-scan", tags=["Registry Scans"])
