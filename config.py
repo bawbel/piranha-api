@@ -37,8 +37,9 @@ AVE_RAW_BASE = f"https://raw.githubusercontent.com/{AVE_REPO}/main/records"
 
 # ── Security ──────────────────────────────────────────────────────────────────
 
-SCAN_RATE_LIMIT = int(os.environ.get("SCAN_RATE_LIMIT", "10"))   # req/min per IP
-SCAN_MAX_BYTES  = int(os.environ.get("SCAN_MAX_BYTES", str(100 * 1024)))  # 100KB
+SCAN_RATE_LIMIT      = int(os.environ.get("SCAN_RATE_LIMIT", "10"))   # req/min per IP
+SCAN_MAX_BYTES       = int(os.environ.get("SCAN_MAX_BYTES", str(100 * 1024)))  # 100KB
+PIRANHA_INGEST_TOKEN = os.environ.get("PIRANHA_INGEST_TOKEN", "")  # protects POST /registry-scan/ingest
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 # Phase 2: add PIRANHA_UI_URL=https://piranha.bawbel.io to Railway env vars
