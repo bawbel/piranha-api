@@ -8,7 +8,8 @@ GET /registry-scan/sources         : available scan sources
 
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Request
-from store.scan_store import get_latest, get_history
+from store.scan_store import get_latest, get_history, save_scan
+from config import PIRANHA_INGEST_TOKEN
 
 router = APIRouter(prefix="/registry-scan", tags=["Registry Scans"])
 
@@ -110,11 +111,9 @@ async def ingest_scan(
     Auth: PIRANHA_INGEST_TOKEN env var must match X-Ingest-Token header.
     Set PIRANHA_INGEST_TOKEN in Railway env vars.
     """
-    from config import PIRANHA_INGEST_TOKEN
     token = request.headers.get("X-Ingest-Token", "")
     if PIRANHA_INGEST_TOKEN and token != PIRANHA_INGEST_TOKEN:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="Invalid ingest token")
+            raise HTTPException(status_code=401, detail="Invalid ingest token")
 
     s      = _validate_source(source)
     body   = await request.json()
@@ -136,7 +135,6 @@ async def ingest_scan(
         "top_owasp_mcp":            body.get("top_owasp_mcp", []),
     }
 
-    from store.scan_store import save_scan
     save_scan(s, data)
 
     return {
