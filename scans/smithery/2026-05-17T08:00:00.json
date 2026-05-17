@@ -1,0 +1,27 @@
+{
+  "scan_source": "smithery",
+  "scan_date": "2026-05-17T08:00:00",
+  "scanner_version": "1.2.1",
+  "servers_scanned": 500,
+  "servers_with_findings": 94,
+  "servers_clean": 406,
+  "servers_with_toxic_flows": 12,
+  "total_findings": 137,
+  "total_toxic_flows": 18,
+  "flaw_rate_pct": 18.8,
+  "by_severity": {
+    "CRITICAL": 8,
+    "HIGH": 31,
+    "MEDIUM": 62,
+    "LOW": 36
+  },
+  "top_ave_ids": [
+    {"ave_id": "AVE-2026-00047", "count": 6, "title": "Hardcoded Credentials"},
+    {"ave_id": "AVE-2026-00011", "count": 22, "title": "Tool poisoning via embedded instructions"},
+    {"ave_id": "AVE-2026-00003", "count": 19, "title": "Prompt injection via system prompt override"},
+    {"ave_id": "AVE-2026-00046", "count": 4, "title": "MCP Tool Hook Hijacking"},
+    {"ave_id": "AVE-2026-00027", "count": 14, "title": "Data exfiltration via covert channel in tool output"}
+  ],
+  "top_owasp_mcp": ["MCP05", "MCP03", "MCP10", "MCP06", "MCP09"],
+  "notes": "500 Smithery registry servers scanned. 2 servers removed by Smithery within 48h of disclosure. Hardcoded credentials (AVE-2026-00047) found in 6 servers - all rotated and reported."
+}

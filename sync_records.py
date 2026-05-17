@@ -1,16 +1,16 @@
 """
-Sync AVE records from bawbel-ave repository.
+Sync AVE records from bawbel/ave repository.
 
 Run this script at deploy time to keep piranha-api in sync with the canonical
-AVE records in github.com/bawbel/bawbel-ave.
+AVE records in github.com/bawbel/ave.
 
 Usage:
     python sync_records.py
 
 Environment:
-    AVE_REPO_URL   — override the source repo API URL
-    RECORDS_DIR    — override target directory (default: ./records)
-    GITHUB_TOKEN   — optional personal access token (raises rate limit 60 → 5000 req/hr)
+    AVE_REPO_URL   - override the source repo API URL
+    RECORDS_DIR    - override target directory (default: ./records)
+    GITHUB_TOKEN   - optional personal access token (raises rate limit 60 -> 5000 req/hr)
 """
 
 import json
@@ -21,10 +21,10 @@ from pathlib import Path
 
 AVE_REPO_API = os.environ.get(
     "AVE_REPO_URL",
-    "https://api.github.com/repos/bawbel/bawbel-ave/contents/records"
+    "https://api.github.com/repos/bawbel/ave/contents/records"
 )
 RECORDS_DIR  = Path(os.environ.get("RECORDS_DIR", "./records"))
-RAW_BASE     = "https://raw.githubusercontent.com/bawbel/bawbel-ave/main/records"
+RAW_BASE     = "https://raw.githubusercontent.com/bawbel/ave/main/records"
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
 
@@ -37,7 +37,7 @@ def _headers() -> dict:
 
 def fetch_json(url: str) -> dict | list:
     req = urllib.request.Request(url, headers=_headers())
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with urllib.request.urlopen(req, timeout=15) as r:  # nosec B310
         return json.loads(r.read())
 
 
@@ -45,10 +45,10 @@ def sync() -> int:
     """Sync records from GitHub. Returns count of records synced."""
     RECORDS_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"[sync] Fetching record list from GitHub...")
+    print("[sync] Fetching record list from GitHub...")
     try:
         contents = fetch_json(AVE_REPO_API)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[sync] ERROR fetching record list: {e}", file=sys.stderr)
         existing = len(list(RECORDS_DIR.glob("AVE-*.json")))
         print(f"[sync] Using {existing} existing bundled records", file=sys.stderr)
@@ -65,7 +65,7 @@ def sync() -> int:
         print("[sync] WARNING: no AVE JSON files found in repo", file=sys.stderr)
         return 0
 
-    print(f"[sync] {len(ave_files)} records found in bawbel-ave repo")
+    print(f"[sync] {len(ave_files)} records found in bawbel/ave repo")
 
     synced = 0
     errors = 0
@@ -77,15 +77,15 @@ def sync() -> int:
             record = fetch_json(url)
             if not record.get("ave_id"):
                 raise ValueError("missing ave_id field")
-            with open(dest, "w") as f:
-                json.dump(record, f, indent=2)
-            print(f"[sync]   ✓ {filename}  ({record.get('attack_class', '')[:45]})")
+            with open(dest, "w", encoding="utf-8") as f:
+                json.dump(record, f, indent=2, ensure_ascii=False)
+            print(f"[sync]   + {filename}  ({record.get('attack_class', '')[:45]})")
             synced += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors += 1
-            print(f"[sync]   ✗ {filename}: {e}", file=sys.stderr)
+            print(f"[sync]   x {filename}: {e}", file=sys.stderr)
             if dest.exists():
-                print(f"[sync]     keeping existing cached copy", file=sys.stderr)
+                print("[sync]     keeping existing cached copy", file=sys.stderr)
 
     # Remove stale local records no longer in the repo
     for local in RECORDS_DIR.glob("AVE-*.json"):
@@ -93,7 +93,7 @@ def sync() -> int:
             local.unlink()
             print(f"[sync]   - removed stale {local.name}")
 
-    print(f"[sync] Complete: {synced} synced, {errors} errors → {RECORDS_DIR}")
+    print(f"[sync] Complete: {synced} synced, {errors} errors -> {RECORDS_DIR}")
     return synced
 
 

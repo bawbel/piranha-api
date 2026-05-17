@@ -1,7 +1,7 @@
 """
 PiranhaDB — AVE records store (file-based implementation).
 
-Loads AVE records from the local records/ directory (synced from bawbel-ave).
+Loads AVE records from the local records/ directory (synced from bawbel/ave).
 Wraps access with Redis cache when REDIS_URL is set.
 
 Upgrade to PostgreSQL:
@@ -109,8 +109,8 @@ def to_summary(record: dict) -> dict:
         "ave_id":         ave_id,
         "title":          record.get("title"),
         "attack_class":   record.get("attack_class"),
-        "severity":       severity_from_cvss(record.get("cvss_ai_score", 0)),
-        "cvss_ai_score":  record.get("cvss_ai_score"),
+        "severity":       severity_from_cvss(record.get("aivss_score", record.get("cvss_ai_score", 0))),
+        "aivss_score":    record.get("aivss_score", record.get("cvss_ai_score")),
         "component_type": record.get("component_type"),
         "status":         record.get("status", "active"),
         "mutation_count": record.get("mutation_count", 0),

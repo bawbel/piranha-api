@@ -54,7 +54,7 @@ def _source_dir(source: str) -> Path:
 
 
 def _timestamp() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")
 
 
 # ── Atomic write ──────────────────────────────────────────────────────────────
