@@ -92,7 +92,7 @@ def get_record(ave_id: str):
         )
     enriched = dict(record)
     enriched["piranha_url"]  = f"https://api.piranha.bawbel.io/records/{ave_id}"
-    enriched["severity"]     = severity_from_cvss(record.get("cvss_ai_score", 0))
+    enriched["severity"]     = severity_from_cvss(record.get("aivss_score", 0))
     enriched["owasp_mcp"]    = get_owasp_mcp(ave_id)
     return enriched
 

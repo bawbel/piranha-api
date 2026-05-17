@@ -1,10 +1,10 @@
 #!/bin/sh
-# Sync AVE records from bawbel-ave then start the API server.
+# Sync AVE records from ave then start the API server.
 # Used as the Railway/Render/Docker start command so records stay
 # current on every deploy — no image rebuild needed when records change.
 set -e
 
-echo "=== Syncing AVE records from bawbel-ave ==="
+echo "=== Syncing AVE records from ave ==="
 python sync_records.py || echo "[start] Sync failed — continuing with bundled records"
 
 echo ""
