@@ -1,11 +1,11 @@
 """
-PiranhaDB — OWASP MCP Top 10 mapping.
+PiranhaDB - OWASP MCP Top 10 mapping.
 
 Mirrors scanner/owasp_mcp_map.py. Kept in sync with bawbel-scanner.
 Used to enrich AVE records at API response time since the AVE JSON
 files do not store this field (it is computed, not stored).
 
-Source of truth: github.com/bawbel/bawbel-scanner/scanner/owasp_mcp_map.py
+Source of truth: github.com/bawbel/scanner/scanner/owasp_mcp_map.py
 """
 
 AVE_TO_OWASP_MCP: dict[str, list[str]] = {
@@ -54,6 +54,9 @@ AVE_TO_OWASP_MCP: dict[str, list[str]] = {
     "AVE-2026-00043": ["MCP10", "MCP03"],
     "AVE-2026-00044": ["MCP10", "MCP06"],
     "AVE-2026-00045": ["MCP02", "MCP09"],
+    "AVE-2026-00046": ["MCP03", "MCP06"],
+    "AVE-2026-00047": ["MCP09", "MCP02"],
+    "AVE-2026-00048": ["MCP03", "MCP06"],
 }
 
 

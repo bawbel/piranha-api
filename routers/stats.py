@@ -1,14 +1,15 @@
 """
-PiranhaDB — Ecosystem stats router.
+PiranhaDB - Ecosystem stats router.
 
-GET /stats           — aggregate stats across all sources (legacy compat)
-GET /stats/ecosystem — full ecosystem stats including registry scans
+GET /stats           - aggregate stats across all sources (legacy compat)
+GET /stats/ecosystem - full ecosystem stats including registry scans
 """
 
 from datetime import datetime, timezone
 from fastapi import APIRouter
 from store.records_store import get_all, severity_from_cvss, count as record_count
 from store.scan_store import get_latest
+from config import SCANNER_VERSION, TOTAL_RULES
 
 router = APIRouter(prefix="/stats", tags=["Statistics"])
 
@@ -25,7 +26,7 @@ def basic_stats():
     total_mutations = 0
 
     for r in items:
-        sev = severity_from_cvss(r.get("cvss_ai_score", 0))
+        sev = severity_from_cvss(r.get("aivss_score", r.get("cvss_ai_score", 0)))
         by_severity[sev] = by_severity.get(sev, 0) + 1
 
         ct = r.get("component_type", "unknown")
@@ -42,6 +43,8 @@ def basic_stats():
         "by_severity":       by_severity,
         "by_component_type": by_type,
         "by_attack_class":   by_class,
+        "scanner_version":   SCANNER_VERSION,
+        "detection_rules":   TOTAL_RULES,
         "schema_version":    "0.1.0",
         "last_updated":      datetime.now(timezone.utc).isoformat(),
     }
@@ -50,7 +53,7 @@ def basic_stats():
 @router.get("/ecosystem")
 def ecosystem_stats():
     """
-    Full ecosystem stats — AVE records + registry scan results.
+    Full ecosystem stats - AVE records + registry scan results.
 
     Aggregates across all scan sources to provide the PiranhaDB
     dashboard numbers.
@@ -61,7 +64,7 @@ def ecosystem_stats():
 
     by_severity: dict[str, int] = {}
     for r in items:
-        sev = severity_from_cvss(r.get("cvss_ai_score", 0))
+        sev = severity_from_cvss(r.get("aivss_score", r.get("cvss_ai_score", 0)))
         by_severity[sev] = by_severity.get(sev, 0) + 1
 
     # Registry scan summaries
@@ -77,12 +80,13 @@ def ecosystem_stats():
             total_servers_scanned += scanned
             total_findings        += findings
             registry_summaries.append({
-                "source":               source,
-                "last_scan":            latest.get("scan_date"),
-                "servers_scanned":      scanned,
+                "source":                source,
+                "last_scan":             latest.get("scan_date"),
+                "scanner_version":       latest.get("scanner_version"),
+                "servers_scanned":       scanned,
                 "servers_with_findings": latest.get("servers_with_findings", 0),
-                "total_findings":       findings,
-                "flaw_rate_pct":        round(
+                "total_findings":        findings,
+                "flaw_rate_pct":         round(
                     latest.get("servers_with_findings", 0) /
                     max(scanned, 1) * 100, 1
                 ),
@@ -101,7 +105,9 @@ def ecosystem_stats():
             })
 
     return {
-        "generated_at":           datetime.now(timezone.utc).isoformat(),
+        "generated_at":          datetime.now(timezone.utc).isoformat(),
+        "scanner_version":       SCANNER_VERSION,
+        "detection_rules":       TOTAL_RULES,
         "ave_records": {
             "total":       len(items),
             "by_severity": by_severity,
@@ -115,8 +121,8 @@ def ecosystem_stats():
             "repos": github_summaries,
         },
         "links": {
-            "scanner":      "https://github.com/bawbel/bawbel-scanner",
-            "ave_standard": "https://github.com/bawbel/bawbel-ave",
+            "scanner":      "https://pypi.org/project/bawbel/",
+            "ave_standard": "https://github.com/bawbel/ave",
             "piranha_api":  "https://api.piranha.bawbel.io",
             "docs":         "https://bawbel.io/docs",
         },
