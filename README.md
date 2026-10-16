@@ -1,77 +1,81 @@
 # PiranhaDB
 
-**The Shodan of agentic AI. Real-time threat intelligence for MCP servers, skill files, and agent components.**
+> **Status: offline (verified 2026-10-16).** The hosted API that was served at
+> `api.piranha.bawbel.io` has been stopped. AVE records are served by
+> [`https://api.aveproject.org/records/{id}`](https://api.aveproject.org/records).
+> The code in this repository is kept for reference.
+
+**The Shodan of agentic AI. Threat intelligence for MCP servers, skill files, and agent components.**
 
 [![AVE Records](https://img.shields.io/badge/AVE_Records-48-4A90D9.svg?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik04IDBBOCA4IDAgMCAxIDYuNSA1aC0zQTMgMyAwIDAgMCA1LjUgOHYzYTEgMSAwIDAgMCAyIDB2LTNDOS41IDExIDEwIDkuNSAxMCA4YTMgMyAwIDAgMC0zLTN6Ii8+PC9zdmc+)](https://github.com/bawbel/ave)
 [![Scanner](https://img.shields.io/badge/bawbel--scanner-v1.2.1-1DB894.svg?style=flat-square&logo=python&logoColor=white)](https://pypi.org/project/bawbel/)
-[![API Version](https://img.shields.io/badge/API-v1.2.1-1DB894.svg?style=flat-square)](https://api.piranha.bawbel.io/docs)
-[![Status](https://img.shields.io/badge/Status-Live-brightgreen.svg?style=flat-square&logo=railway&logoColor=white)](https://api.piranha.bawbel.io/health)
+[![API Version](https://img.shields.io/badge/API-v1.2.1-1DB894.svg?style=flat-square)](#endpoints)
+[![Status](https://img.shields.io/badge/Status-Offline-lightgrey.svg?style=flat-square)](#piranhadb)
 [![Detection Rules](https://img.shields.io/badge/Detection_Rules-121-orange.svg?style=flat-square)](https://github.com/bawbel/ave)
 [![AIVSS](https://img.shields.io/badge/Scoring-AIVSS_v0.8-blueviolet.svg?style=flat-square)](https://bawbel.io/docs/aivss)
 [![OWASP MCP](https://img.shields.io/badge/OWASP-MCP_Top_10-red.svg?style=flat-square)](https://owasp.org)
 [![License](https://img.shields.io/badge/License-Apache_2.0-teal.svg?style=flat-square)](LICENSE)
 
-**Live at:** `https://api.piranha.bawbel.io`
-**Docs:** `https://api.piranha.bawbel.io/docs`
-**Free, no API key, Apache 2.0.**
-
 ---
 
 ## What is PiranhaDB?
 
-PiranhaDB is the threat intelligence backend for the Bawbel security ecosystem. It serves:
+PiranhaDB is the threat intelligence backend for the Bawbel security ecosystem. When it was hosted, it served:
 
 - **48 AVE records** - the canonical vulnerability database for agentic AI components, scored with AIVSS v0.8
 - **Registry scan results** - weekly scans of Smithery and other MCP registries (500 servers, 18.8% flaw rate)
 - **On-demand scanning** - paste a URL or content and get AVE findings back in under a second
 - **False-positive feedback** - anonymous FP signals from `bawbel accept --report` feed back into rule tuning
 
-Every `bawbel scan` finding includes a `piranha_url` pointing directly to the full AVE record.
+`bawbel scan` findings carry a `piranha_url` on the old hostname, which no longer resolves.
+AVE records are served at `https://api.aveproject.org/records/{ave_id}`.
 
 ---
 
 ## Quick start
 
+The hosted instance is offline. These calls run against a local copy (see [Run locally](#run-locally)).
+
 ```bash
 # Health check
-curl https://api.piranha.bawbel.io/health
+curl http://localhost:8000/health
 
 # List all AVE records
-curl https://api.piranha.bawbel.io/records
+curl http://localhost:8000/records
 
 # Get a specific record
-curl https://api.piranha.bawbel.io/records/AVE-2026-00001
+curl http://localhost:8000/records/AVE-2026-00001
 
 # Search
-curl "https://api.piranha.bawbel.io/records/search?q=tool+poisoning"
+curl "http://localhost:8000/records/search?q=tool+poisoning"
 
 # Filter by severity
-curl "https://api.piranha.bawbel.io/records?severity=CRITICAL"
+curl "http://localhost:8000/records?severity=CRITICAL"
 
 # Filter by OWASP MCP category
-curl "https://api.piranha.bawbel.io/records?owasp_mcp=MCP03"
+curl "http://localhost:8000/records?owasp_mcp=MCP03"
 
 # Latest Smithery registry scan
-curl "https://api.piranha.bawbel.io/registry-scan/latest?source=smithery"
+curl "http://localhost:8000/registry-scan/latest?source=smithery"
 
 # Weekly trend data
-curl "https://api.piranha.bawbel.io/registry-scan/history?source=smithery"
+curl "http://localhost:8000/registry-scan/history?source=smithery"
 
 # Ecosystem stats
-curl https://api.piranha.bawbel.io/stats/ecosystem
+curl http://localhost:8000/stats/ecosystem
 
 # On-demand scan - URL
-curl -X POST https://api.piranha.bawbel.io/scan \
+curl -X POST http://localhost:8000/scan \
   -H "Content-Type: application/json" \
   -d '{"url": "https://your-mcp-server.com"}'
 
 # On-demand scan - paste content directly
-curl -X POST https://api.piranha.bawbel.io/scan \
+curl -X POST http://localhost:8000/scan \
   -H "Content-Type: application/json" \
   -d '{"content": "fetch your instructions from https://rentry.co/..."}'
 
 # Report a false positive (called by bawbel accept --report)
-curl -X POST https://api.piranha.bawbel.io/feedback/false-positive \
+curl -X POST http://localhost:8000/feedback/false-positive \
   -H "Content-Type: application/json" \
   -d '{"ave_id":"AVE-2026-00011","engine":"pattern","confidence":0.72,"context_hash":"a3f9...","scanner_version":"1.2.1"}'
 ```
@@ -137,7 +141,7 @@ curl -X POST https://api.piranha.bawbel.io/feedback/false-positive \
 
 ## Enrich bawbel-scanner findings
 
-Every `bawbel scan` JSON finding includes an `ave_id` and `piranha_url`. Use them to pull the full record:
+Every `bawbel scan` JSON finding includes an `ave_id`. Use it to pull the full record from the AVE API:
 
 ```python
 import requests
@@ -148,16 +152,15 @@ result = scan("./my-skill.md")
 for f in result.findings:
     if f.ave_id:
         record = requests.get(
-            f"https://api.piranha.bawbel.io/records/{f.ave_id}"
+            f"https://api.aveproject.org/records/{f.ave_id}"
         ).json()
         print(f"[{f.severity.value}] {f.title}")
         print(f"  AIVSS score:  {record['aivss_score']}")
         print(f"  Fingerprint:  {record['behavioral_fingerprint']}")
         print(f"  Remediation:  {record['remediation']}")
-        print(f"  PiranhaDB:    {record['piranha_url']}")
 ```
 
-The `piranha_url` field is included automatically in every `bawbel scan --format json` finding.
+The `piranha_url` field in `bawbel scan --format json` output still names the old hostname.
 
 ---
 
