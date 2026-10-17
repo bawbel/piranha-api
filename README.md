@@ -32,6 +32,19 @@ AVE records are served at `https://api.aveproject.org/records/{ave_id}`.
 
 ---
 
+## What is PiranhaDB?
+
+PiranhaDB is the threat intelligence backend for the Bawbel security ecosystem. It serves:
+
+- **48 AVE records** - the canonical vulnerability database for agentic AI components, scored with AIVSS v0.8
+- **Registry scan results** - weekly scans of Smithery and other MCP registries (500 servers, 18.8% flaw rate)
+- **On-demand scanning** - paste a URL or content and get AVE findings back in under a second
+- **False-positive feedback** - anonymous FP signals from `bawbel accept --report` feed back into rule tuning
+
+Every `bawbel scan` finding includes a `piranha_url` pointing directly to the full AVE record.
+
+---
+
 ## Quick start
 
 The hosted instance is offline. These calls run against a local copy (see [Run locally](#run-locally)).
@@ -51,6 +64,9 @@ curl "http://localhost:8000/records/search?q=tool+poisoning"
 
 # Filter by severity
 curl "http://localhost:8000/records?severity=CRITICAL"
+
+# Filter by severity
+curl "https://api.piranha.bawbel.io/records?severity=CRITICAL"
 
 # Filter by OWASP MCP category
 curl "http://localhost:8000/records?owasp_mcp=MCP03"
