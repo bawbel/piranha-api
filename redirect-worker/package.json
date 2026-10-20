@@ -1,0 +1,9 @@
+{
+  "name": "piranha-redirect",
+  "private": true,
+  "type": "module",
+  "description": "Redirect Worker for the retired api.piranha.bawbel.io host",
+  "scripts": {
+    "test": "node --test"
+  }
+}

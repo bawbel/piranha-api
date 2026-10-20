@@ -1,0 +1,32 @@
+# Tests for the redirect Worker for the retired api.piranha.bawbel.io host.
+name: redirect worker
+
+on:
+  pull_request:
+    paths:
+      - "redirect-worker/**"
+      - ".github/workflows/redirect-worker.yml"
+  push:
+    branches: [develop, main]
+    paths:
+      - "redirect-worker/**"
+      - ".github/workflows/redirect-worker.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: redirect-worker
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Node version (the runner image ships Node; the tests need 18 or later)
+        run: node --version
+      - name: Test
+        run: node --test
