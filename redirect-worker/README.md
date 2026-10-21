@@ -67,26 +67,37 @@ CI runs the same command on pull requests that touch this folder.
 
 ## Verify
 
-Certificate issuance can take a few minutes. Check each one at a time.
+Certificate issuance can take a few minutes. Check each one at a time. Use GET, not
+`curl -I`: the AVE API answers GET with 200 and rejects HEAD with 405 (checked 2026-10-21), so
+a HEAD request would end at that 405 even though the redirect is correct.
 
 ```bash
 # the certificate covers the hostname (subject and issuer lines, no handshake error)
 curl -sv -o /dev/null https://api.piranha.bawbel.io/ 2>&1 | grep -iE 'subject:|issuer:|SSL certificate verify'
 
-# a single record follows through to the AVE API
-curl -sIL https://api.piranha.bawbel.io/records/AVE-2026-00002 | grep -iE '^(HTTP|location)'
-# expect: 301 to https://api.aveproject.org/records/AVE-2026-00002, then the API's own status
+# first hop: what the Worker returns for a record
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://api.piranha.bawbel.io/records/AVE-2026-00002
+# expect: 301 https://api.aveproject.org/records/AVE-2026-00002
+
+# the whole chain: it ends on the AVE API
+curl -sL -o /dev/null -w '%{http_code} %{url_effective}\n' https://api.piranha.bawbel.io/records/AVE-2026-00002
+# expect: 200 https://api.aveproject.org/records/AVE-2026-00002
 
 # the list call older bawbel-mcp releases make
-curl -sIL 'https://api.piranha.bawbel.io/records?limit=1' | grep -iE '^(HTTP|location)'
+curl -sL -o /dev/null -w '%{http_code} %{url_effective}\n' 'https://api.piranha.bawbel.io/records?limit=1'
+# expect: 200 https://api.aveproject.org/records?limit=1
 
 # everything else lands on the repository
-curl -sI https://api.piranha.bawbel.io/health | grep -iE '^(HTTP|location)'
-# expect: 302 to https://github.com/bawbel/piranha-api
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://api.piranha.bawbel.io/health
+# expect: 302 https://github.com/bawbel/piranha-api
 ```
 
-The last status of the record check is the AVE API's. The redirect is correct even when that
-API is down: on 2026-10-20 it returned 500 at the root and 503 on `/records`.
+The final status of the chain is the AVE API's own. The redirect itself is correct even when
+that API is down, which it was on 2026-10-20 (500 at the root, 503 on `/records`).
+
+Before deploying, the same commands pass against this Worker served locally: the first hops
+return 301 and 302 as above, and following a record link with GET ends at `200` on the live
+API.
 
 ## Roll back
 
