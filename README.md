@@ -7,7 +7,7 @@
 
 **The Shodan of agentic AI. Threat intelligence for MCP servers, skill files, and agent components.**
 
-[![AVE Records](https://img.shields.io/badge/AVE_Records-48-4A90D9.svg?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik04IDBBOCA4IDAgMCAxIDYuNSA1aC0zQTMgMyAwIDAgMCA1LjUgOHYzYTEgMSAwIDAgMCAyIDB2LTNDOS41IDExIDEwIDkuNSAxMCA4YTMgMyAwIDAgMC0zLTN6Ii8+PC9zdmc+)](https://github.com/bawbel/ave)
+[![AVE Records](https://img.shields.io/badge/AVE-records-4A90D9.svg?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik04IDBBOCA4IDAgMCAxIDYuNSA1aC0zQTMgMyAwIDAgMCA1LjUgOHYzYTEgMSAwIDAgMCAyIDB2LTNDOS41IDExIDEwIDkuNSAxMCA4YTMgMyAwIDAgMC0zLTN6Ii8+PC9zdmc+)](https://github.com/bawbel/ave)
 [![Scanner](https://img.shields.io/badge/bawbel--scanner-v1.2.1-1DB894.svg?style=flat-square&logo=python&logoColor=white)](https://pypi.org/project/bawbel/)
 [![API Version](https://img.shields.io/badge/API-v1.2.1-1DB894.svg?style=flat-square)](#endpoints)
 [![Status](https://img.shields.io/badge/Status-Offline-lightgrey.svg?style=flat-square)](#piranhadb)
@@ -22,7 +22,7 @@
 
 PiranhaDB is the threat intelligence backend for the Bawbel security ecosystem. When it was hosted, it served:
 
-- **48 AVE records** - the canonical vulnerability database for agentic AI components, scored with AIVSS v0.8
+- **The AVE corpus** - the canonical vulnerability database for agentic AI components, scored with AIVSS v0.8
 - **Registry scan results** - weekly scans of Smithery and other MCP registries (500 servers, 18.8% flaw rate)
 - **On-demand scanning** - paste a URL or content and get AVE findings back in under a second
 - **False-positive feedback** - anonymous FP signals from `bawbel accept --report` feed back into rule tuning
@@ -36,7 +36,7 @@ AVE records are served at `https://api.aveproject.org/records/{ave_id}`.
 
 PiranhaDB is the threat intelligence backend for the Bawbel security ecosystem. It serves:
 
-- **48 AVE records** - the canonical vulnerability database for agentic AI components, scored with AIVSS v0.8
+- **The AVE corpus** - the canonical vulnerability database for agentic AI components, scored with AIVSS v0.8
 - **Registry scan results** - weekly scans of Smithery and other MCP registries (500 servers, 18.8% flaw rate)
 - **On-demand scanning** - paste a URL or content and get AVE findings back in under a second
 - **False-positive feedback** - anonymous FP signals from `bawbel accept --report` feed back into rule tuning
